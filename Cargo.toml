@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/learn",
+    "crates/io_perf",
+    "crates/sql_perf",
+    "crates/tcp_perf",
+]
