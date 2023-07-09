@@ -2,6 +2,7 @@ use clap::Parser;
 
 mod tcp_client;
 mod tcp_server;
+mod tcp_node;
 mod error;
 mod stat;
 

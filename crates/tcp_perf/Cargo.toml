@@ -25,3 +25,4 @@ rand = "0.8.3"
 mini-redis = "0.4"
 crossbeam = "0.8"
 clap = { version="4.3.8", features = ["derive"] }
+dashmap = "5.4.0"

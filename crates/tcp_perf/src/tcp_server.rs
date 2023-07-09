@@ -2,10 +2,12 @@ use tokio::net::TcpListener;
 
 use super::error;
 use super::stat;
+use super::tcp_node::TcpNode;
 
 pub struct TcpServer {
     listen_addr: String,
     listener: TcpListener,
+    node: TcpNode,
 }
 
 impl TcpServer {
@@ -15,6 +17,7 @@ impl TcpServer {
         let server = Self {
             listen_addr,
             listener,
+            node : TcpNode::new()
         };
 
         Ok(server)

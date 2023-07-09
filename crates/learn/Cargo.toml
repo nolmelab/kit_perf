@@ -49,3 +49,7 @@ path="src/waker.rs"
 [[bin]]
 name="waker2"
 path="src/waker2.rs"
+
+[[bin]]
+name="channel"
+path="src/channel.rs"
