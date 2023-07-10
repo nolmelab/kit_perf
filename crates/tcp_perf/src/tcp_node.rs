@@ -5,97 +5,114 @@
 #![allow(unused)]
 
 use std::ops::Deref;
-use std::sync::{ Arc, atomic::AtomicUsize };
+use std::sync::{ Arc, atomic::AtomicU64 };
 use std::net::SocketAddr;
 use dashmap::DashMap;
 
 use tokio::{ sync::RwLock, io::AsyncReadExt, io::AsyncWriteExt };
 use tokio::net::TcpStream;
+use tokio::sync::mpsc::{ UnboundedReceiver, UnboundedSender };
 use bytes::{ BytesMut, BufMut, Buf, Bytes };
 
 use super::error::Error;
 
-pub struct SharedSession(Arc<Session>);
-
-pub struct TcpNode {
-    sessions: DashMap<usize, SharedSession>,
-    next_id: AtomicUsize,
-}
-
+// 하위의 통신 처리 클래스. TcpStream에 대한 소유권을 갖는다.
 pub struct Session {
-    id: usize,
-    stream: RwLock<TcpStream>,
+    id: u64,
+    stream: TcpStream,
     addr: SocketAddr,
     buf: BytesMut,
+    receiver: UnboundedReceiver<Message>,
 }
 
-impl SharedSession {
-    fn new(id: usize, stream: TcpStream, addr: SocketAddr) -> Self {
-        let session = Session {
-            id,
-            stream: RwLock::new(stream),
-            addr,
-            buf: BytesMut::new(),
-        };
-
-        Self {
-            0: Arc::new(session),
-        }
-    }
-
-    // recv 처리를 한번만 한다.
-    pub async fn recv(&self) -> Result<(), Error> {
-        let result = self.0.recv().await;
-        result
-    }
-
-    // send는 원래 락이 필요하다.
+pub struct Peer {
+    id: u64,
+    sender: UnboundedSender<Message>,
 }
 
-impl Clone for SharedSession {
-    fn clone(&self) -> Self {
-        SharedSession {
-            0: self.0.clone(),
-        }
-    }
+pub enum Message {
+    Close,
+    Send(Bytes),
 }
 
-impl Session {
-    async fn recv(&self) -> Result<(), Error> {
-        let mut bytes = BytesMut::with_capacity(1024);
-
-        // AsyncReadExt가 &mut 리시버를 필요로 한다. 안 좋다.
-        let mut guard = self.stream.write().await;
-        let result = guard.read(bytes.as_mut()).await;
-
-        Ok(())
-    }
+// 상위 노드. 피어를 다룬다.
+pub struct TcpNode {
+    peers: DashMap<u64, Peer>,
+    next_id: AtomicU64,
 }
 
 impl TcpNode {
     pub fn new() -> TcpNode {
         Self {
-            sessions: DashMap::new(),
-            next_id: AtomicUsize::new(1)
+            peers: DashMap::new(),
+            next_id: AtomicU64::new(1),
         }
     }
 
-    pub fn add(&self, stream: TcpStream) -> Option<SharedSession> {
+    pub fn start(&self, stream: TcpStream) -> Option<u64> {
         let addr = stream.peer_addr();
+
         if let Ok(addr) = addr {
-            let s = SharedSession::new(
-                self.next_id.fetch_add(1, std::sync::atomic::Ordering::AcqRel),
-                stream,
-                addr
-            );
+            let id = self.next_id.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+            let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Message>();
+            let mut session = Session::new(id, stream, addr, rx);
 
-            let ns = s.clone();
-            self.sessions.insert(s.0.id, ns);
+            // 세션 관리는 tokio task에서만 한다. tokio에서 실행하는 것을 관리하려고 하면
+            // 소유권 관리가 매우 애매해지고 락 처리도 어려워진다. 
+            // 자세히 한번 정리할 필요가 있다. 지금은 채널을 통해 상위 인터페이스를 분리한다.
+            // 버퍼만 락으로 분리해서 Arc로 공유하는 방법도 있다. 이것이 우리가 C++에서 
+            // 사용해온 방식이다. 
+            tokio::spawn(async move {
+                session.run();
+            });
 
-            // start  
+            // Peer들을 상위에서 사용한다. 수신 처리는 좀 더 나중에 고민한다. 
+            let peer = Peer::new(&id, tx);
+            self.peers.insert(id, peer);
 
-            return Some(s);
+            return Some(id);
         }
         None
+    }
+
+    pub fn close(&mut self, id: u64) {
+        // Peer를 찾아서, close 명령을 보낸다.
+    }
+}
+
+// 상위 노드를 통해 전송한다. 수신 처리는 여러 Fn들로 해야 한다.
+impl Session {
+    fn new(
+        id: u64,
+        stream: TcpStream,
+        addr: SocketAddr,
+        receiver: UnboundedReceiver<Message>
+    ) -> Self {
+        let session = Session {
+            id,
+            stream: stream,
+            addr,
+            buf: BytesMut::new(),
+            receiver,
+        };
+
+        session
+    }
+
+    pub async fn run(&mut self) -> Result<(), Error> {
+        // read and write
+
+        Ok(())
+    }
+
+    // send는 원래 락이 필요하다.
+}
+
+impl Peer {
+    fn new(id: &u64, sender: UnboundedSender<Message>) -> Self {
+        Self {
+            id: *id,
+            sender,
+        }
     }
 }
