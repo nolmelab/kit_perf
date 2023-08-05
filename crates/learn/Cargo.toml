@@ -53,3 +53,7 @@ path="src/waker2.rs"
 [[bin]]
 name="channel"
 path="src/channel.rs"
+
+[[bin]]
+name="oneshot"
+path="src/oneshot.rs"
