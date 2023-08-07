@@ -102,4 +102,10 @@ mod tests {
 
     }
 
+    #[tokio::test]
+    async fn length_codec_impl() {
+        // length를 갖는 코덱을 직접 구현한다. 
+        // 
+    }
+
 }

@@ -5,7 +5,7 @@ mod tests {
     use tokio::io::{ AsyncReadExt, AsyncWriteExt };
     use tokio_stream::StreamExt;
     use futures::SinkExt; // StreamExt는 tokio에 있는 걸 사용하고
-    use tokio_util::codec::{ BytesCodec, Decoder };
+    use tokio_util::codec::{ LengthDelimitedCodec, BytesCodec, Decoder };
 
     #[tokio::test]
     async fn understand_bytes_codec() {
