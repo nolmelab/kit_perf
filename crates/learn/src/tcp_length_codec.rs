@@ -2,7 +2,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};
 
-struct LengthCodec(());
+pub struct LengthCodec(());
 
 impl LengthCodec {
     pub fn new() -> Self {
@@ -58,9 +58,8 @@ impl Encoder<BytesMut> for LengthCodec {
 mod tests {
     use super::LengthCodec;
     use anyhow;
-    use bytes::{Buf, BufMut, Bytes, BytesMut};
+    use bytes::BytesMut;
     use futures::SinkExt; // StreamExt는 tokio에 있는 걸 사용하고
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::{TcpListener, TcpStream};
     use tokio_stream::StreamExt;
     use tokio_util::codec::Decoder;
