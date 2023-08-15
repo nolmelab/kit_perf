@@ -1,15 +1,15 @@
 use clap::Parser;
 
-mod tcp_client;
-mod tcp_server;
-mod tcp_node;
+mod server;
+mod client;
+mod event;
 mod error;
 mod stat;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+pub struct Args {
     /// execution mode - server or client
     #[arg(short, long)]
     mode: String,
@@ -27,23 +27,16 @@ struct Args {
     conns: u32,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), error::Error> {
+fn main() {
     let args = Args::parse();
 
     if args.mode == "server" {
-        // Server를 만들고 실행한다.
-        let mut server = tcp_server::TcpServer::new(args.listen).await?;
-        server.run().await?;
-        
+        server::run(&args);
     }
-
-    if args.mode != "client" {
+    else if args.mode == "client" {
+        client::run(&args);
+    }
+    else {
         println!("server or client mode is supported");
-        // 에러를 리턴한다.
     }
-
-    // Client를 만들고 실행한다.
-
-    Ok(())
 }

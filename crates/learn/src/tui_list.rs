@@ -219,6 +219,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                         .into(),
                 );
             }
+            // ListItem에 Vec<Line<'_>>을 넣는다. Vec<Line>이 Into<Text>이다. 
             ListItem::new(lines).style(Style::default().fg(Color::Black).bg(Color::White))
         })
         .collect();
@@ -251,12 +252,14 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
                 "INFO" => Style::default().fg(Color::Blue),
                 _ => Style::default(),
             };
+
             // Add a example datetime and apply proper spacing between them
             let header = Line::from(vec![
                 Span::styled(format!("{level:<9}"), s),
                 " ".into(),
                 "2020-01-01 10:00:00".italic(),
             ]);
+
             // The event gets its own line
             let log = Line::from(vec![event.into()]);
 
@@ -273,6 +276,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             ])
         })
         .collect();
+
     let events_list = List::new(events)
         .block(Block::default().borders(Borders::ALL).title("List"))
         .start_corner(Corner::BottomLeft);
