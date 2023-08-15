@@ -3,10 +3,9 @@ use clap::Parser;
 mod server;
 mod client;
 mod event;
-mod error;
 
 /// Simple program to greet a person
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     /// execution mode - server or client
@@ -30,10 +29,10 @@ fn main() {
     let args = Args::parse();
 
     if args.mode == "server" {
-        server::run(&args);
+        server::run(args);
     }
     else if args.mode == "client" {
-        client::run(&args);
+        client::run(args);
     }
     else {
         println!("server or client mode is supported");
