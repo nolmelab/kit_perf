@@ -4,7 +4,6 @@ mod server;
 mod client;
 mod event;
 mod error;
-mod stat;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
