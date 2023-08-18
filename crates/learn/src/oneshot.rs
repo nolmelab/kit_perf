@@ -60,6 +60,9 @@ async fn main() {
 // Poll 등의 수단을 통해 Receiver<T>를 Future로 만든다. 
 // 
 
-// Waker를 사용하지 않으면 폴링을 하게 된다. 
-// 더 단순하게 처리할 수 있는 방법은 없을까? 
- 
+
+
+#[cfg(test)]
+mod tests {
+
+}

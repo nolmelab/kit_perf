@@ -35,6 +35,8 @@ ratatui = { version = "0.22.0", features = ["all-widgets"]}
 itertools = "0.11.0"
 actix = "0.11.0"
 actix-rt = "2.2" # <-- Runtime for actix
+ractor = "0.9.0"
+ractor_cluster = "0.9.0"
 
 [[bin]]
 name="main"
@@ -79,3 +81,7 @@ path="src/tui.rs"
 [[bin]]
 name="actix"
 path="src/actix.rs"
+
+[[bin]]
+name="ractor"
+path="src/ractor.rs"
