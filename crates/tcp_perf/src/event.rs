@@ -8,7 +8,7 @@ pub enum Event {
     /// 클라이언트에서 연결 했을 때
     Connected(SocketAddr),          
     /// 서버에서 연결을 받았을 때
-    Accepted(SocketAddr), 
+    Accepted(SocketAddr, u32), 
     /// 연결이 종료되었을 때
     Closed,
     /// 에코 받았을 때 

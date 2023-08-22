@@ -37,16 +37,19 @@ async fn run_tcp(args: &super::Args, tx: Sender<Event>) -> Result<(), anyhow::Er
     let listener = TcpListener::bind(&args.listen).await?;
 
     let running = true;
+    let mut count = 1;
 
     while running {
         let (stream, remote_addr) = listener.accept().await?;
-        let evt = Event::Accepted(remote_addr);
+        let evt = Event::Accepted(remote_addr, count);
         let _ = tx.send(evt);
         let echo_size = args.size.clone();
 
         tokio::spawn(async move {
             let _ = run_stream(echo_size, stream).await;
         });
+
+        count += 1;
     }
 
     Ok(())
@@ -85,8 +88,8 @@ fn run_ui(args: &super::Args, rx: Receiver<Event>) -> Result<(), anyhow::Error> 
 
         let ev = rx.recv()?;
         match ev {
-            Event::Accepted(addr) => {
-                message = format!("accepted. {:?}:{}", addr.ip(), addr.port());
+            Event::Accepted(addr, count) => {
+                message = format!("accepted. Count: {}, {:?}:{}", count, addr.ip(), addr.port());
             }
             _ => {}
         }
