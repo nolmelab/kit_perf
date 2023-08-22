@@ -23,6 +23,10 @@ pub struct Args {
     /// Number of connections 
     #[arg(short, long, default_value_t = 1)]
     conns: u32,
+
+    /// Payload length
+    #[arg(short, long, default_value_t = 1024)]
+    size: u32,
 }
 
 fn main() {

@@ -1,26 +1,32 @@
-use std::sync::mpsc::{ self, Receiver, Sender };
+use crate::event::Event;
+use anyhow;
+use bytes::BytesMut;
+use ratatui::{backend::CrosstermBackend, widgets::Paragraph, Terminal};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::{
+    io::stdout,
+    thread,
+    time::Duration,
+};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::runtime::Builder;
-use anyhow;
-use ratatui::{backend::CrosstermBackend, widgets::Paragraph, Terminal};
-use std::{
-    thread,
-    io::stdout,
-    time::{Duration, Instant},
-};
-use crate::event::Event;
 
 pub fn run(args: super::Args) {
     let (tx, rx) = mpsc::channel::<Event>();
 
-    let runtime = Builder::new_multi_thread().enable_io().thread_name("run-tcp").build().unwrap();
+    let runtime = Builder::new_multi_thread()
+        .enable_io()
+        .thread_name("run-tcp")
+        .build()
+        .unwrap();
 
-    // 소유권을 자세히 잘 정리하면 안정성에 큰 도움이 된다. 그것이 러스트다. 
+    // 소유권을 자세히 잘 정리하면 안정성에 큰 도움이 된다. 그것이 러스트다.
     let args2 = args.clone();
 
     // we need to spawn a thread for the ui since block_on() blocks on the current thread.
     thread::spawn(move || {
-        run_ui(&args2, rx);
+        let _ = run_ui(&args2, rx);
     });
 
     let _result = runtime.block_on(run_tcp(&args, tx));
@@ -31,24 +37,34 @@ async fn run_tcp(args: &super::Args, tx: Sender<Event>) -> Result<(), anyhow::Er
     let listener = TcpListener::bind(&args.listen).await?;
 
     let running = true;
+    let mut count = 1;
 
     while running {
-        let (stream , remote_addr) = listener.accept().await?;
-
-        let evt = Event::Accepted(remote_addr);
+        let (stream, remote_addr) = listener.accept().await?;
+        let evt = Event::Accepted(remote_addr, count);
         let _ = tx.send(evt);
+        let echo_size = args.size.clone();
 
         tokio::spawn(async move {
-            let _ = run_stream(stream).await;
+            let _ = run_stream(echo_size, stream).await;
         });
+
+        count += 1;
     }
 
     Ok(())
 }
 
-async fn run_stream(stream: TcpStream) -> Result<(), anyhow::Error> {
-    // recv and then send
+// write_buf()가 mut 참조를 필요로 한다. stream을 mut로 전달한다. 
+async fn run_stream(echo_size: u32, mut stream: TcpStream) -> Result<(), anyhow::Error> {
+    let mut buf = BytesMut::with_capacity(echo_size as usize);
+    let run = true;
 
+    while run {
+        stream.read_buf(&mut buf).await?;
+        stream.write_buf(&mut buf).await?;
+        buf.clear(); 
+    }
 
     Ok(())
 }
@@ -72,12 +88,10 @@ fn run_ui(args: &super::Args, rx: Receiver<Event>) -> Result<(), anyhow::Error> 
 
         let ev = rx.recv()?;
         match ev {
-            Event::Accepted(addr) => {
-                message = format!("{:?}:{}", addr.ip(), addr.port());
-            },
-            _ => {
-
+            Event::Accepted(addr, count) => {
+                message = format!("accepted. Count: {}, {:?}:{}", count, addr.ip(), addr.port());
             }
+            _ => {}
         }
     }
 
