@@ -36,7 +36,6 @@ itertools = "0.11.0"
 actix = "0.11.0"
 actix-rt = "2.2" # <-- Runtime for actix
 ractor = "0.9.0"
-ractor_cluster = "0.9.0"
 
 [[bin]]
 name="main"
